@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     history: HistoryLoadingConfig = HistoryLoadingConfig()
 
     loader: LoaderConfig = LoaderConfig()
-    hono: HonoConfig
+    hono: HonoConfig = HonoConfig()
 
     ditto: DittoConfig = DittoConfig()
 

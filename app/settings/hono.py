@@ -16,7 +16,7 @@ class HonoConfig(BaseModel):
 
     device: NonEmptyStr = "device"
     tenant: NonEmptyStr = "tenant"
-    password: NonEmptyStr
+    password: NonEmptyStr = "changme"
 
     topic: NonEmptyStr = "telemetry"
 

@@ -18,7 +18,6 @@ class Hono:
                 check_hostname=False,
                 connection=ConnectionConfig(
                     cafile=config.cafile,
-                    cadata=config.cadata,
                     uri=config.get_uri(),
                 ),
             )
