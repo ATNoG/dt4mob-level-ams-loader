@@ -15,11 +15,12 @@ type JsonValue = Union[JV, BaseModel]
 class Coordinates(BaseModel):
     latitude: float
     longitude: float
+    altitude: float
 
     @classmethod
-    def from_etrs89_tm06(cls, x: float, y: float):
+    def from_etrs89_tm06(cls, x: float, y: float, z: float):
         lat, lon = Transformer.from_crs(3763, 4326).transform(x, y)
-        return cls(latitude=lat, longitude=lon)
+        return cls(latitude=lat, longitude=lon, altitude=z)
 
 
 T = TypeVar("T", bound=BaseModel)

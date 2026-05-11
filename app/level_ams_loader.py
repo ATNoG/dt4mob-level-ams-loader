@@ -191,7 +191,7 @@ class LevelAMSLoader:
                 attributes=ditto_instrument.Attributes(
                     **instrument.model_dump(),
                     coordinates=Coordinates.from_etrs89_tm06(
-                        instrument_coords.x, instrument_coords.y
+                        instrument_coords.x, instrument_coords.y, instrument_coords.z
                     ),
                 ),
                 features=ditto_instrument.Features(dict()),

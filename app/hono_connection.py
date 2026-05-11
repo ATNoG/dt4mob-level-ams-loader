@@ -14,7 +14,7 @@ class Hono:
         logger.debug("Hono uri: {}", config.get_uri())
         self._mqttc = MQTTClient(
             config=ClientConfig(
-                reconnect_retries=-1,
+                reconnect_retries=100,
                 check_hostname=False,
                 connection=ConnectionConfig(
                     cafile=config.cafile,
