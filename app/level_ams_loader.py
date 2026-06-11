@@ -180,7 +180,7 @@ class LevelAMSLoader:
         msg = DittoProtocolEnvelope(
             topic=Topic(
                 namespace=self.hono.config.device,
-                thingName=f"{geo_asset_id}.instrument.{instrument.instrumentoId}",
+                thingName=f"{settings.ditto.subject}:{geo_asset_id}.instrument.{instrument.instrumentoId}",
                 group=Group.THING,
                 channel=Channel.TWIN,
                 criterion=Criterion.COMMAND,
@@ -204,7 +204,7 @@ class LevelAMSLoader:
             msg = DittoProtocolEnvelope(
                 topic=Topic(
                     namespace=self.hono.config.device,
-                    thingName=f"{geo_asset_id}.instrument.{instrument.instrumentoId}",
+                    thingName=f"{settings.ditto.subject}:{geo_asset_id}.instrument.{instrument.instrumentoId}",
                     group=Group.THING,
                     channel=Channel.TWIN,
                     criterion=Criterion.COMMAND,
@@ -246,7 +246,6 @@ class LevelAMSLoader:
         for task in history_tasks:
             history_event.events.extend(task.result())
 
-        print("{}MB", len(history_event.model_dump_json()) / 2 ** (10 * 2))
         logger.debug(
             "Events Response Status Code: {}",
             (
@@ -323,7 +322,7 @@ class LevelAMSLoader:
         msg = DittoProtocolEnvelope(
             topic=Topic(
                 namespace=self.hono.config.device,
-                thingName=geo_asset.id,
+                thingName=f"{settings.ditto.subject}:{geo_asset.id}",
                 group=Group.THING,
                 channel=Channel.TWIN,
                 criterion=Criterion.COMMAND,

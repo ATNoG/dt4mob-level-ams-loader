@@ -8,6 +8,7 @@ from app.models.common import NonEmptyStr
 
 class DittoConfig(BaseModel):
     default_policy: NonEmptyStr = "dt4mob:default"
+    subject: NonEmptyStr = "test"
 
     username: Optional[str] = None
     password: Optional[str] = None
