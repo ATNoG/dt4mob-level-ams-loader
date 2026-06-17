@@ -44,7 +44,7 @@ class LevelAMSLoader:
         self.constraints = constraints
         self.ditto_client = get_ditto_client()
         self.history_client = None
-        if settings.history.enabled:
+        if settings.history.enabled and settings.oidc is not None:
             self.history_client = get_history_client()
 
         auth_headers = {
@@ -64,7 +64,7 @@ class LevelAMSLoader:
             yield
 
     async def _handle_parameter_history(
-        self, geo_asset_id: str, instrument_id: str, parameter_key: str
+        self, geo_asset_id: str, instrument_id: str, parameter_key: str, matricula: str
     ) -> list[event.Item]:
         tomorrow = (datetime.now(tz=timezone.utc) + timedelta(days=1)).isoformat()
         query_params = {"StartDate": "1970-01-01", "EndDate": tomorrow, "Page": 1}
@@ -112,7 +112,7 @@ class LevelAMSLoader:
             event_items.extend(
                 event.Item(
                     time=item.timestamp,
-                    thing_id=f"{self.hono.config.device}:{geo_asset_id}.instrument.{instrument_id}",
+                    thing_id=f"{self.hono.config.device}:{settings.ditto.subject}:{geo_asset_id}.instrument.{matricula}",
                     action=event.Action.modified,
                     path=f"/features/{parameter_key}/properties/latestValue",
                     value=item.model_dump(mode="json"),
@@ -122,14 +122,14 @@ class LevelAMSLoader:
         return event_items
 
     async def _handle_parameter(
-        self, geo_asset_id: str, instrument_id: str, parameter_key: str
+        self, geo_asset_id: str, instrument_id: str, parameter_key: str, matricula: str
     ) -> Optional[ParameterValue]:
         hour_before_last_update = (
             await ModifiedTime.get_time(
                 self.ditto_client,
                 self.hono.config.device,
                 geo_asset_id,
-                instrument_id,
+                matricula,
             )
             - timedelta(hours=1)
         ).isoformat()
@@ -155,7 +155,7 @@ class LevelAMSLoader:
         instrument_coords: InstrumentCoordinate,
     ) -> None:
         tasks: list[tuple[Parameter, Task[Optional[ParameterValue]]]] = []
-        logger.info("Started handling instrument: {}", instrument.instrumentoId)
+        logger.info("Started handling instrument: {}", instrument.matricula)
         chunk_size = self.config.parameters_chunk_size
         param_chunks = [
             instrument.parametros[i : i + chunk_size]
@@ -172,6 +172,7 @@ class LevelAMSLoader:
                                     geo_asset_id,
                                     instrument.instrumentoId,
                                     parameter.parametroChave,
+                                    instrument.matricula,
                                 )
                             ),
                         )
@@ -180,7 +181,7 @@ class LevelAMSLoader:
         msg = DittoProtocolEnvelope(
             topic=Topic(
                 namespace=self.hono.config.device,
-                thingName=f"{settings.ditto.subject}:{geo_asset_id}.instrument.{instrument.instrumentoId}",
+                thingName=f"{settings.ditto.subject}:{geo_asset_id}.instrument.{instrument.matricula}",
                 group=Group.THING,
                 channel=Channel.TWIN,
                 criterion=Criterion.COMMAND,
@@ -204,7 +205,7 @@ class LevelAMSLoader:
             msg = DittoProtocolEnvelope(
                 topic=Topic(
                     namespace=self.hono.config.device,
-                    thingName=f"{settings.ditto.subject}:{geo_asset_id}.instrument.{instrument.instrumentoId}",
+                    thingName=f"{settings.ditto.subject}:{geo_asset_id}.instrument.{instrument.matricula}",
                     group=Group.THING,
                     channel=Channel.TWIN,
                     criterion=Criterion.COMMAND,
@@ -219,14 +220,12 @@ class LevelAMSLoader:
             )
             await self.hono.send(msg.model_dump_json(exclude_none=True).encode())
 
-        logger.info("Finished handling instrument: {}", instrument.instrumentoId)
+        logger.info("Finished handling instrument: {}", instrument.matricula)
 
         if not settings.history.enabled or not self.history_client:
             return
 
-        logger.info(
-            "Started loading history for instrument: {}", instrument.instrumentoId
-        )
+        logger.info("Started loading history for instrument: {}", instrument.matricula)
 
         history_tasks: list[Task[list[event.Item]]] = []
         if settings.history.enabled:
@@ -239,25 +238,28 @@ class LevelAMSLoader:
                                     geo_asset_id,
                                     instrument.instrumentoId,
                                     parameter.parametroChave,
+                                    instrument.matricula,
                                 )
                             ),
                         )
-        history_event = event.Event(events=[])
-        for task in history_tasks:
-            history_event.events.extend(task.result())
+        chunk_size = 20
+        task_chunks = [
+            history_tasks[i : i + chunk_size]
+            for i in range(0, len(history_tasks), chunk_size)
+        ]
+        for chunk in task_chunks:
+            history_event = event.Event(events=[])
+            for task in chunk:
+                history_event.events.extend(task.result())
 
-        logger.debug(
-            "Events Response Status Code: {}",
-            (
-                await self.history_client.post(
-                    "/events", json=history_event.model_dump(mode="json")
-                )
-            ).status_code,
-        )
+            payload = history_event.model_dump(mode="json")
+            logger.trace("Sending: {}", payload)
+            logger.debug(
+                "Events Response Status Code: {}",
+                (await self.history_client.post("/events", json=payload)).status_code,
+            )
 
-        logger.info(
-            "Finished loading history for instrument: {}", instrument.instrumentoId
-        )
+        logger.info("Finished loading history for instrument: {}", instrument.matricula)
 
     async def _handle_instruments(
         self, instruments: list[Instrument], geo_asset_id: str
@@ -315,7 +317,7 @@ class LevelAMSLoader:
         geo_asset_attributes = geotechnical_asset.Attributes(
             **geo_asset.model_dump(),
             instrumentList=[
-                f"{id}.instrument.{instrument.instrumentoId}"
+                f"{id}.instrument.{instrument.matricula}"
                 for instrument in instruments.root
             ],
         )

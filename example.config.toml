@@ -1,0 +1,73 @@
+# ==========================================
+# Loader Service Example Configuration
+# ==========================================
+
+# General log level for the application
+# Options: "TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL"
+log_level = "INFO" # Literal String
+
+# ------------------------------------------
+# Loader Settings
+# ------------------------------------------
+[loader]
+base_url = "http://localhost"                    # URL String (default: "http://localhost")
+jwt = ""                                         # Optional String (null) — provide this or credentials
+http_timeout = 30.0                              # Optional Float in seconds (default: 30, null to disable)
+start_page_idx = 1                               # Positive Integer (default: 1)
+instrument_coords_file = "instrument_coords.csv" # Path String
+
+# Number of parameters handled in parallel per instrument
+parameters_chunk_size = 10 # Positive Integer (default: 10)
+
+# Number of instruments handled in parallel
+instruments_chunk_size = 10 # Positive Integer (default: 10)
+
+# Loader Credentials (only used if jwt is not set)
+# [loader.credentials]
+# username = "user"   # String
+# password = "secret" # String
+
+# ------------------------------------------
+# Eclipse Hono Settings (MQTT connection)
+# ------------------------------------------
+[hono]
+host = "127.0.0.1" # String (default: "127.0.0.1")
+port = 1883        # Optional Integer (null)
+secure = false     # Boolean — if true, uses mqtts:// scheme (default: false)
+cafile = ""        # Optional Path String (null) — CA certificate file
+cadata = ""        # Optional String (null) — CA certificate data (PEM)
+
+device = "device"    # Non-empty String (default: "device")
+tenant = "tenant"    # Non-empty String (default: "tenant")
+password = "changme" # Non-empty String (default: "changme")
+
+topic = "telemetry" # Non-empty String (default: "telemetry")
+
+# ------------------------------------------
+# Eclipse Ditto Settings
+# ------------------------------------------
+[ditto]
+base_url = "http://localhost/api/2" # URL String (default: "http://localhost/api/2")
+default_policy = "dt4mob:default"   # Non-empty String (default: "dt4mob:default")
+subject = "test"                    # Non-empty String (default: "test")
+username = ""                       # Optional String (null)
+password = ""                       # Optional String (null)
+cafile = ""                         # Optional Path String (null) — CA certificate file
+cadata = ""                         # Optional String (null) — CA certificate data (PEM)
+
+# ------------------------------------------
+# History Loading Settings
+# ------------------------------------------
+[history]
+enabled = false                        # Boolean (default: false)
+base_url = "http://127.0.0.1/historic" # URL String (default: "http://127.0.0.1/historic")
+
+# ------------------------------------------
+# OIDC Settings (Optional — required for history loading)
+# ------------------------------------------
+[oidc]
+username = "admin"   # String (default: "admin")
+password = "admin"   # String (default: "admin")
+client_id = "client" # String (default: "client")
+realm = "realm"      # String (default: "realm")
+base_url = "http://localhost" # String (default: "http://localhost")

@@ -186,9 +186,9 @@ class ModifiedTime(BaseModel):
         client: httpx.AsyncClient,
         namespace: str,
         geo_asset_id: str,
-        instrument_id: str,
+        matricula: str,
     ) -> datetime:
-        thing_id = f"{namespace}:{geo_asset_id}.instrument.{instrument_id}"
+        thing_id = f"{namespace}:{geo_asset_id}.instrument.{matricula}"
         query_params = {
             "fields": "_modified",
         }

@@ -1,5 +1,5 @@
 import sys
-from typing import Literal, Self
+from typing import Literal, Optional, Self
 
 from loguru import logger
 from pydantic import model_validator
@@ -14,6 +14,7 @@ from app.settings.ditto import DittoConfig
 from app.settings.history_loading import HistoryLoadingConfig
 from app.settings.hono import HonoConfig
 from app.settings.loader import LoaderConfig
+from app.settings.oidc import OIDCConfig
 
 type LogLevel = Literal[
     "TRACE",
@@ -41,6 +42,7 @@ class Settings(BaseSettings):
     hono: HonoConfig = HonoConfig()
 
     ditto: DittoConfig = DittoConfig()
+    oidc: Optional[OIDCConfig] = None
 
     @model_validator(mode="after")
     def validate_credentials(self) -> Self:
