@@ -31,15 +31,11 @@ instruments_chunk_size = 10 # Positive Integer (default: 10)
 # Eclipse Hono Settings (MQTT connection)
 # ------------------------------------------
 [hono]
-host = "127.0.0.1" # String (default: "127.0.0.1")
-port = 1883        # Optional Integer (null)
-secure = false     # Boolean — if true, uses mqtts:// scheme (default: false)
-cafile = ""        # Optional Path String (null) — CA certificate file
-cadata = ""        # Optional String (null) — CA certificate data (PEM)
-
-device = "device"    # Non-empty String (default: "device")
-tenant = "tenant"    # Non-empty String (default: "tenant")
-password = "changme" # Non-empty String (default: "changme")
+host = "127.0.0.1"      # String (default: "127.0.0.1")
+port = 1883             # Optional Integer (null)
+cafile = "./ca.crt"     # Path String (default: "./ca.crt") — CA certificate file
+certfile = "./cert.pem" # Path String (default: "./cert.pem") — Client certificate file
+keyfile = "./key.pem"   # Path String (default: "./key.pem") — Client key file
 
 topic = "telemetry" # Non-empty String (default: "telemetry")
 
@@ -66,8 +62,8 @@ base_url = "http://127.0.0.1/historic" # URL String (default: "http://127.0.0.1/
 # OIDC Settings (Optional — required for history loading)
 # ------------------------------------------
 [oidc]
-username = "admin"   # String (default: "admin")
-password = "admin"   # String (default: "admin")
-client_id = "client" # String (default: "client")
-realm = "realm"      # String (default: "realm")
+username = "admin"            # String (default: "admin")
+password = "admin"            # String (default: "admin")
+client_id = "client"          # String (default: "client")
+realm = "realm"               # String (default: "realm")
 base_url = "http://localhost" # String (default: "http://localhost")

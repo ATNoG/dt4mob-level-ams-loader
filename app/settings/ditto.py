@@ -7,6 +7,7 @@ from app.models.common import NonEmptyStr
 
 
 class DittoConfig(BaseModel):
+    namespace: NonEmptyStr = "namespace"
     default_policy: NonEmptyStr = "dt4mob:default"
     subject: NonEmptyStr = "test"
 

@@ -15,9 +15,10 @@ class Hono:
         self._mqttc = MQTTClient(
             config=ClientConfig(
                 reconnect_retries=100,
-                check_hostname=False,
                 connection=ConnectionConfig(
                     cafile=config.cafile,
+                    certfile=config.certfile,
+                    keyfile=config.keyfile,
                     uri=config.get_uri(),
                 ),
             )

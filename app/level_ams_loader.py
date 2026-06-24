@@ -1,3 +1,4 @@
+import logging
 from asyncio import Task, TaskGroup
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
@@ -112,7 +113,7 @@ class LevelAMSLoader:
             event_items.extend(
                 event.Item(
                     time=item.timestamp,
-                    thing_id=f"{self.hono.config.device}:{settings.ditto.subject}:{geo_asset_id}.instrument.{matricula}",
+                    thing_id=f"{settings.ditto.namespace}:{settings.ditto.subject}:{geo_asset_id}.instrument.{matricula}",
                     action=event.Action.modified,
                     path=f"/features/{parameter_key}/properties/latestValue",
                     value=item.model_dump(mode="json"),
@@ -127,7 +128,7 @@ class LevelAMSLoader:
         hour_before_last_update = (
             await ModifiedTime.get_time(
                 self.ditto_client,
-                self.hono.config.device,
+                settings.ditto.namespace,
                 geo_asset_id,
                 matricula,
             )
@@ -180,7 +181,7 @@ class LevelAMSLoader:
 
         msg = DittoProtocolEnvelope(
             topic=Topic(
-                namespace=self.hono.config.device,
+                namespace=settings.ditto.namespace,
                 thingName=f"{settings.ditto.subject}:{geo_asset_id}.instrument.{instrument.matricula}",
                 group=Group.THING,
                 channel=Channel.TWIN,
@@ -204,7 +205,7 @@ class LevelAMSLoader:
         for parameter, task in tasks:
             msg = DittoProtocolEnvelope(
                 topic=Topic(
-                    namespace=self.hono.config.device,
+                    namespace=settings.ditto.namespace,
                     thingName=f"{settings.ditto.subject}:{geo_asset_id}.instrument.{instrument.matricula}",
                     group=Group.THING,
                     channel=Channel.TWIN,
@@ -323,7 +324,7 @@ class LevelAMSLoader:
         )
         msg = DittoProtocolEnvelope(
             topic=Topic(
-                namespace=self.hono.config.device,
+                namespace=settings.ditto.namespace,
                 thingName=f"{settings.ditto.subject}:{geo_asset.id}",
                 group=Group.THING,
                 channel=Channel.TWIN,
@@ -338,7 +339,7 @@ class LevelAMSLoader:
             instruments.root = [
                 instrument
                 for instrument in instruments.root
-                if instrument.instrumentoId in self.constraints.instrument_ids
+                if instrument.matricula in self.constraints.instrument_ids
             ]
         async with TaskGroup() as tg:
             tg.create_task(
