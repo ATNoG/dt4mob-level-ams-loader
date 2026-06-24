@@ -1,4 +1,3 @@
-import logging
 from asyncio import Task, TaskGroup
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
@@ -10,7 +9,12 @@ from loguru import logger
 from app.dependencies.ditto_client import get_ditto_client
 from app.dependencies.history_client import get_history_client
 from app.hono_connection import Hono
-from app.models.common import Coordinates, PaginationWrapper
+from app.models.common import (
+    Coordinates,
+    InstrumentType,
+    MeasurementState,
+    PaginationWrapper,
+)
 from app.models.ditto import (
     Channel,
     CommandAction,
@@ -195,6 +199,13 @@ class LevelAMSLoader:
                     coordinates=Coordinates.from_etrs89_tm06(
                         instrument_coords.x, instrument_coords.y, instrument_coords.z
                     ),
+                    dashboardUrl=settings.dashboard.build_url(
+                        instrument_type=instrument.tipoInstrumento.value,
+                        namespace=settings.ditto.namespace,
+                        subject=settings.ditto.subject,
+                        geo_asset_id=geo_asset_id,
+                        matricula=instrument.matricula,
+                    ),
                 ),
                 features=ditto_instrument.Features(dict()),
             ).model_dump(mode="json"),
@@ -203,6 +214,41 @@ class LevelAMSLoader:
         await self.hono.send(msg.model_dump_json(exclude_none=True).encode())
 
         for parameter, task in tasks:
+            latestValue = task.result()
+            instrument_type = None
+            try:
+                instrument_type = InstrumentType(instrument.tipoInstrumento.value)
+            except ValueError:
+                logger.warning(
+                    "Unknown instrument type detected: {}",
+                    instrument.tipoInstrumento.value,
+                )
+            if latestValue is None:
+                measurementState = MeasurementState.OK
+            elif (
+                thresholds := settings.instrument_thresholds.root.get(
+                    instrument.matricula
+                )
+            ) is not None:
+                measurementState = thresholds.get_measurement_state(
+                    parameter.parametroChave, latestValue.valor
+                )
+
+            elif (
+                instrument_type is not None
+                and (
+                    thresholds := settings.instrument_type_thresholds.root.get(
+                        instrument_type
+                    )
+                )
+                is not None
+            ):
+                measurementState = thresholds.get_measurement_state(
+                    parameter.parametroChave, latestValue.valor
+                )
+            else:
+                measurementState = MeasurementState.OK
+
             msg = DittoProtocolEnvelope(
                 topic=Topic(
                     namespace=settings.ditto.namespace,
@@ -215,7 +261,9 @@ class LevelAMSLoader:
                 path=f"/features/{parameter.parametroChave}",
                 value=ditto_instrument.Properties(
                     properties=ditto_instrument.Property(
-                        **parameter.model_dump(), latestValue=task.result()
+                        **parameter.model_dump(),
+                        latestValue=latestValue,
+                        state=measurementState,
                     )
                 ).model_dump(mode="json"),
             )

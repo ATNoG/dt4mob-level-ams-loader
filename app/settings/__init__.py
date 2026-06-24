@@ -10,11 +10,16 @@ from pydantic_settings import (
     TomlConfigSettingsSource,
 )
 
+from app.settings.dashboard import DashboardConfig
 from app.settings.ditto import DittoConfig
 from app.settings.history_loading import HistoryLoadingConfig
 from app.settings.hono import HonoConfig
 from app.settings.loader import LoaderConfig
 from app.settings.oidc import OIDCConfig
+from app.settings.thresholds import (
+    InstrumentThresholds,
+    InstrumentTypeThresholds,
+)
 
 type LogLevel = Literal[
     "TRACE",
@@ -40,6 +45,13 @@ class Settings(BaseSettings):
 
     loader: LoaderConfig = LoaderConfig()
     hono: HonoConfig = HonoConfig()
+
+    instrument_thresholds: InstrumentThresholds = InstrumentThresholds(dict())
+    instrument_type_thresholds: InstrumentTypeThresholds = InstrumentTypeThresholds(
+        dict()
+    )
+
+    dashboard: DashboardConfig = DashboardConfig()
 
     ditto: DittoConfig = DittoConfig()
     oidc: Optional[OIDCConfig] = None

@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field, RootModel
 
-from app.models.common import Coordinates, NonEmptyStr
+from app.models.common import Coordinates, MeasurementState, NonEmptyStr
 from app.models.level_ams import instrument, parameter
 
 
@@ -14,10 +14,12 @@ class ETRS89_TM06(BaseModel):
 class Attributes(instrument.Instrument):
     coordinates: Coordinates
     parametros: List[instrument.Parameter] = Field(exclude=True)
+    dashboardUrl: Optional[str] = None
 
 
 class Property(instrument.Parameter):
     latestValue: Optional[parameter.Parameter]
+    state: MeasurementState
 
 
 class Properties(BaseModel):

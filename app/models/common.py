@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import Annotated, TypeVar, Union
 
 from pydantic import BaseModel, Field, NonNegativeInt
@@ -10,6 +11,17 @@ type Lat = Annotated[float, Field(ge=-90, le=90)]
 type NonEmptyStr = Annotated[str, Field(min_length=1)]
 
 type JsonValue = Union[JV, BaseModel]
+
+
+class InstrumentType(StrEnum):
+    INCLINOMETER = "InstrumentoTipoInstrumento_Inclinometro"
+    LOAD_CELL = "InstrumentoTipoInstrumento_CelulaCarga"
+
+
+class MeasurementState(StrEnum):
+    OK = "OK"
+    ALERT = "ALERT"
+    ALARM = "ALARM"
 
 
 class Coordinates(BaseModel):
