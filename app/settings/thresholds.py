@@ -15,14 +15,14 @@ class Threshold(BaseModel):
     threshold_type: ThresholdType
     value: float
 
-    def check(self, value: float) -> bool:
+    def check(self, latestValue: float, earliestValue: float) -> bool:
         match self.threshold_type:
             case ThresholdType.GT:
-                return value > self.value
+                return latestValue > self.value
             case ThresholdType.LT:
-                return value < self.value
+                return latestValue < self.value
             case ThresholdType.DELTA:
-                return abs(value) > self.value
+                return abs(latestValue - earliestValue) > self.value
 
 
 class Thresholds(BaseModel):
@@ -31,15 +31,15 @@ class Thresholds(BaseModel):
     alarm: Threshold
 
     def get_measurement_state(
-        self, parameter_key: str, value: float
+        self, parameter_key: str, latestValue: float, earliestValue: float
     ) -> MeasurementState:
         if parameter_key.rstrip("0123456789") not in self.parameter_types:
             return MeasurementState.OK
 
-        if self.alarm.check(value):
+        if self.alarm.check(latestValue, earliestValue):
             return MeasurementState.ALARM
 
-        if self.alert.check(value):
+        if self.alert.check(latestValue, earliestValue):
             return MeasurementState.ALERT
 
         return MeasurementState.OK

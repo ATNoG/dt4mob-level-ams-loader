@@ -128,20 +128,18 @@ class LevelAMSLoader:
 
     async def _handle_parameter(
         self, geo_asset_id: str, instrument_id: str, parameter_key: str, matricula: str
-    ) -> Optional[ParameterValue]:
-        hour_before_last_update = (
-            await ModifiedTime.get_time(
-                self.ditto_client,
-                settings.ditto.namespace,
-                geo_asset_id,
-                matricula,
-            )
-            - timedelta(hours=1)
-        ).isoformat()
+    ) -> Optional[tuple[ParameterValue, ParameterValue]]:
+        hour_before_last_update = await ModifiedTime.get_time(
+            self.ditto_client,
+            settings.ditto.namespace,
+            geo_asset_id,
+            matricula,
+        ) - timedelta(hours=1)
         tomorrow = (datetime.now(tz=timezone.utc) + timedelta(days=1)).isoformat()
         query_params = {
-            "StartDate": hour_before_last_update,
+            "StartDate": "2018-12-07T14:50:00",
             "EndDate": tomorrow,
+            "PageSize": 1,
         }
         res = await self.http_client.get(
             f"/activos-geotecnicos/{geo_asset_id}/instrumento/{instrument_id}/parametro/{parameter_key}/data",
@@ -151,7 +149,22 @@ class LevelAMSLoader:
         first_page = PaginationWrapper[parameter.Parameter].model_validate_json(
             res.content
         )
-        return first_page.items[0] if len(first_page.items) > 0 else None
+        if first_page.totalCount < 1:
+            return None
+        if first_page.items[0].timestamp < hour_before_last_update:
+            return None
+
+        if first_page.totalPages > 1:
+            query_params["Page"] = first_page.totalPages
+            res = await self.http_client.get(
+                f"/activos-geotecnicos/{geo_asset_id}/instrumento/{instrument_id}/parametro/{parameter_key}/data",
+                params=query_params,
+            )
+        last_page = PaginationWrapper[parameter.Parameter].model_validate_json(
+            res.content
+        )
+
+        return first_page.items[0], last_page.items[-1]
 
     async def _handle_instrument(
         self,
@@ -159,7 +172,9 @@ class LevelAMSLoader:
         geo_asset_id: str,
         instrument_coords: InstrumentCoordinate,
     ) -> None:
-        tasks: list[tuple[Parameter, Task[Optional[ParameterValue]]]] = []
+        tasks: list[
+            tuple[Parameter, Task[Optional[tuple[ParameterValue, ParameterValue]]]]
+        ] = []
         logger.info("Started handling instrument: {}", instrument.matricula)
         chunk_size = self.config.parameters_chunk_size
         param_chunks = [
@@ -214,7 +229,10 @@ class LevelAMSLoader:
         await self.hono.send(msg.model_dump_json(exclude_none=True).encode())
 
         for parameter, task in tasks:
-            latestValue = task.result()
+            latestValue: Optional[ParameterValue] = None
+            earliestValue: Optional[ParameterValue] = None
+            if (res := task.result()) is not None:
+                latestValue, earliestValue = res
             instrument_type = None
             try:
                 instrument_type = InstrumentType(instrument.tipoInstrumento.value)
@@ -223,7 +241,7 @@ class LevelAMSLoader:
                     "Unknown instrument type detected: {}",
                     instrument.tipoInstrumento.value,
                 )
-            if latestValue is None:
+            if latestValue is None or earliestValue is None:
                 measurementState = MeasurementState.OK
             elif (
                 thresholds := settings.instrument_thresholds.root.get(
@@ -231,7 +249,7 @@ class LevelAMSLoader:
                 )
             ) is not None:
                 measurementState = thresholds.get_measurement_state(
-                    parameter.parametroChave, latestValue.valor
+                    parameter.parametroChave, latestValue.valor, earliestValue.valor
                 )
 
             elif (
@@ -244,7 +262,7 @@ class LevelAMSLoader:
                 is not None
             ):
                 measurementState = thresholds.get_measurement_state(
-                    parameter.parametroChave, latestValue.valor
+                    parameter.parametroChave, latestValue.valor, earliestValue.valor
                 )
             else:
                 measurementState = MeasurementState.OK
