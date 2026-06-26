@@ -4,66 +4,174 @@
 
 # General log level for the application
 # Options: "TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL"
-log_level = "INFO" # Literal String
+log_level = "INFO"
 
 # ------------------------------------------
 # Loader Settings
 # ------------------------------------------
 [loader]
-base_url = "http://localhost"                    # URL String (default: "http://localhost")
-jwt = ""                                         # Optional String (null) — provide this or credentials
-http_timeout = 30.0                              # Optional Float in seconds (default: 30, null to disable)
-start_page_idx = 1                               # Positive Integer (default: 1)
-instrument_coords_file = "instrument_coords.csv" # Path String
+# Base URL of the Level AMS API
+base_url = "http://localhost"
+
+# JWT token for API authentication (provide this OR credentials below)
+jwt = ""
+
+# HTTP request timeout in seconds (null to disable timeout)
+http_timeout = 30.0
+
+# Starting page index for pagination (must be >= 1)
+start_page_idx = 1
+
+# Path to CSV file containing instrument coordinates (ETRS89 TM06 format)
+instrument_coords_file = "instrument_coords.csv"
 
 # Number of parameters handled in parallel per instrument
-parameters_chunk_size = 10 # Positive Integer (default: 10)
+parameters_chunk_size = 10
 
 # Number of instruments handled in parallel
-instruments_chunk_size = 10 # Positive Integer (default: 10)
+instruments_chunk_size = 10
 
 # Loader Credentials (only used if jwt is not set)
+# The loader will perform a login request to obtain a JWT token
 # [loader.credentials]
-# username = "user"   # String
-# password = "secret" # String
+# username = "user"
+# password = "secret"
 
 # ------------------------------------------
 # Eclipse Hono Settings (MQTT connection)
 # ------------------------------------------
 [hono]
-host = "127.0.0.1"      # String (default: "127.0.0.1")
-port = 1883             # Optional Integer (null)
-cafile = "./ca.crt"     # Path String (default: "./ca.crt") — CA certificate file
-certfile = "./cert.pem" # Path String (default: "./cert.pem") — Client certificate file
-keyfile = "./key.pem"   # Path String (default: "./key.pem") — Client key file
+# MQTT broker hostname
+host = "127.0.0.1"
 
-topic = "telemetry" # Non-empty String (default: "telemetry")
+# MQTT broker port (null to use default MQTT port)
+port = 1883
+
+# Optional MQTT authentication credentials
+# device and tenant are combined to form the username: device@tenant
+# device = "my-device"
+# tenant = "my-tenant"
+# password = "secret"
+
+# TLS certificate files for secure MQTT connection
+# Path to CA certificate file
+cafile = "./ca.crt"
+
+# Path to client certificate file
+certfile = "./cert.pem"
+
+# Path to client private key file
+keyfile = "./key.pem"
+
+# MQTT topic to publish messages to
+topic = "telemetry"
 
 # ------------------------------------------
 # Eclipse Ditto Settings
 # ------------------------------------------
 [ditto]
-base_url = "http://localhost/api/2" # URL String (default: "http://localhost/api/2")
-default_policy = "dt4mob:default"   # Non-empty String (default: "dt4mob:default")
-subject = "test"                    # Non-empty String (default: "test")
-username = ""                       # Optional String (null)
-password = ""                       # Optional String (null)
-cafile = ""                         # Optional Path String (null) — CA certificate file
-cadata = ""                         # Optional String (null) — CA certificate data (PEM)
+# Ditto API base URL
+base_url = "http://localhost/api/2"
+
+# Namespace for Ditto things (used as prefix in thing IDs)
+namespace = "namespace"
+
+# Default policy ID assigned to created things
+default_policy = "dt4mob:default"
+
+# Subject prefix for thing names (e.g., "test" creates things like "test:assetId")
+subject = "test"
+
+# Optional Ditto API authentication credentials
+# username = ""
+# password = ""
+
+# Optional TLS configuration for Ditto API connection
+# Path to CA certificate file
+# cafile = ""
+
+# PEM-encoded CA certificate data (alternative to cafile)
+# cadata = ""
+
+# ------------------------------------------
+# Dashboard Settings (Required)
+# ------------------------------------------
+[dashboard]
+# Base URL for inclinometer Grafana dashboard
+inclinometer_base_url = "http://127.0.0.1"
+
+# Query parameter name for instrument ID in inclinometer dashboard URL
+inclinometer_query_param = "var-instrument_id"
+
+# Base URL for load cell Grafana dashboard
+load_cell_base_url = "http://127.0.0.1"
+
+# Query parameter name for instrument ID in load cell dashboard URL
+load_cell_query_param = "var-instrument_id"
 
 # ------------------------------------------
 # History Loading Settings
 # ------------------------------------------
 [history]
-enabled = false                        # Boolean (default: false)
-base_url = "http://127.0.0.1/historic" # URL String (default: "http://127.0.0.1/historic")
+# Enable history data loading (reserved for manual data recovery runs)
+enabled = false
+
+# History API base URL
+base_url = "http://127.0.0.1/historic"
 
 # ------------------------------------------
-# OIDC Settings (Optional — required for history loading)
+# OIDC Settings (Required when history.enabled = true)
 # ------------------------------------------
 [oidc]
-username = "admin"            # String (default: "admin")
-password = "admin"            # String (default: "admin")
-client_id = "client"          # String (default: "client")
-realm = "realm"               # String (default: "realm")
-base_url = "http://localhost" # String (default: "http://localhost")
+# OIDC/Keycloak username for history API authentication
+username = "admin"
+
+# OIDC/Keycloak password for history API authentication
+password = "admin"
+
+# OAuth2 client ID
+client_id = "client"
+
+# Keycloak realm name
+realm = "realm"
+
+# OIDC provider base URL
+base_url = "http://localhost"
+
+# ------------------------------------------
+# Instrument Thresholds (Optional)
+# ------------------------------------------
+# Per-instrument alert/alarm thresholds keyed by instrument matricula.
+# These thresholds override instrument_type_thresholds for specific instruments.
+# Each entry requires: parameter_types, alert, and alarm configurations.
+#
+# [instrument_thresholds]
+# "A25.1" = {
+#   parameter_types = ["INCL01"],
+#   alert = { threshold_type = "GT", value = 5.0 },
+#   alarm = { threshold_type = "GT", value = 10.0 }
+# }
+
+# ------------------------------------------
+# Instrument Type Thresholds (Optional)
+# ------------------------------------------
+# Per-instrument-type alert/alarm thresholds.
+# Applied when no instrument-specific threshold exists for the given matricula.
+# Supported instrument types:
+#   - "InstrumentoTipoInstrumento_Inclinometro"
+#   - "InstrumentoTipoInstrumento_CelulaCarga"
+#
+# [instrument_type_thresholds]
+# "InstrumentoTipoInstrumento_Inclinometro" = {
+#   parameter_types = ["INCL01"],
+#   alert = { threshold_type = "GT", value = 5.0 },
+#   alarm = { threshold_type = "GT", value = 10.0 }
+# }
+
+# ------------------------------------------
+# Threshold Types Reference
+# ------------------------------------------
+# threshold_type options:
+#   "GT"     - Greater Than: triggers when value > threshold
+#   "LT"     - Less Than: triggers when value < threshold
+#   "DELTA"  - Absolute Delta: triggers when abs(value) > threshold

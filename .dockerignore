@@ -1,1 +1,20 @@
+.git
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Caches
+.mypy_cache
+.ruff_cache
+
 config.toml
+cron-values.csv
+instrument_coords.csv
