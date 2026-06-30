@@ -39,6 +39,7 @@ from app.models.level_ams.parameter import Parameter as ParameterValue
 from app.settings import settings
 from app.settings.loader import LoaderConfig
 from app.settings.loader_constraints import LoaderConstraints
+from app.utils.geo import get_geotile
 
 
 class LevelAMSLoader:
@@ -198,6 +199,9 @@ class LevelAMSLoader:
                         )
                     )
 
+        coords = Coordinates.from_etrs89_tm06(
+            instrument_coords.x, instrument_coords.y, instrument_coords.z
+        )
         msg = DittoProtocolEnvelope(
             topic=Topic(
                 namespace=settings.ditto.namespace,
@@ -211,9 +215,8 @@ class LevelAMSLoader:
                 policyId=settings.ditto.default_policy,
                 attributes=ditto_instrument.Attributes(
                     **instrument.model_dump(),
-                    coordinates=Coordinates.from_etrs89_tm06(
-                        instrument_coords.x, instrument_coords.y, instrument_coords.z
-                    ),
+                    coordinates=coords,
+                    geotile=get_geotile(coords.latitude, coords.longitude),
                     dashboardUrl=settings.dashboard.build_url(
                         instrument_type=instrument.tipoInstrumento.value,
                         namespace=settings.ditto.namespace,
@@ -383,6 +386,7 @@ class LevelAMSLoader:
 
         geo_asset_attributes = geotechnical_asset.Attributes(
             **geo_asset.model_dump(),
+            geotile=get_geotile(geo_asset.latitude, geo_asset.longitude),
             instrumentList=[
                 f"{id}.instrument.{instrument.matricula}"
                 for instrument in instruments.root

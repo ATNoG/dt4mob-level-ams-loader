@@ -4,6 +4,7 @@ from app.models.level_ams import geotechnical_asset
 
 
 class Attributes(geotechnical_asset.GeotechnicalAsset):
+    geotile: int
     instrumentList: list[str]
 
 

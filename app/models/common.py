@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Annotated, TypeVar, Union
+from typing import Annotated, Self, TypeVar, Union
 
 from pydantic import BaseModel, Field, NonNegativeInt
 from pydantic import JsonValue as JV
@@ -30,7 +30,7 @@ class Coordinates(BaseModel):
     altitude: float
 
     @classmethod
-    def from_etrs89_tm06(cls, x: float, y: float, z: float):
+    def from_etrs89_tm06(cls, x: float, y: float, z: float) -> Self:
         lat, lon = Transformer.from_crs(3763, 4326).transform(x, y)
         return cls(latitude=lat, longitude=lon, altitude=z)
 

@@ -13,6 +13,7 @@ class ETRS89_TM06(BaseModel):
 
 class Attributes(instrument.Instrument):
     coordinates: Coordinates
+    geotile: int
     parametros: List[instrument.Parameter] = Field(exclude=True)
     dashboardUrl: Optional[str] = None
 
